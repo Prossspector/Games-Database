@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Dynamic Analytics Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            purple: '#8b5cf6',
+                            cyan: '#06b6d4',
+                            dark: '#0b0f19',
+                            card: 'rgba(17, 24, 39, 0.7)',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glass-neon-purple {
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+        .glass-neon-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+        .pulse-green {
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(11, 15, 25, 1); }
+        ::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(6, 182, 212, 0.5); }
+    </style>
+</head>
+<body class="h-full overflow-hidden bg-radial from-slate-900 via-slate-950 to-black">
+
+    <div class="flex h-full overflow-hidden">
+        
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 -translate-x-full transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 glass border-r border-slate-800/60 flex flex-col justify-between">
+            <div>
+                <div class="h-20 flex items-center px-6 border-b border-slate-800/60 gap-3">
+                    <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-brand-purple to-brand-cyan flex items-center justify-center shadow-lg shadow-purple-500/20">
+                        <i class="fa-solid fa-cubes text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-brand-cyan text-sm block">NEXUS_CORE</span>
+                        <span class="text-[10px] text-brand-purple font-medium tracking-widest uppercase">Cloud Interface</span>
+                    </div>
+                </div>
+
+                <nav class="p-4 space-y-1.5" id="sidebar-nav">
+                    <button onclick="switchTab('overview')" id="nav-overview" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-brand-purple/20 to-transparent border-l-2 border-brand-purple text-white font-medium text-sm transition-all text-left">
+                        <i class="fa-solid fa-chart-pie text-brand-purple"></i> Dashboard Overview
+                    </button>
+                    <button onclick="switchTab('config')" id="nav-config" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/40 font-medium text-sm transition-all border-l-2 border-transparent text-left">
+                        <i class="fa-solid fa-sliders"></i> Game Configurations
+                    </button>
+                    <button onclick="switchTab('benchmark')" id="nav-benchmark" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/40 font-medium text-sm transition-all border-l-2 border-transparent text-left">
+                        <i class="fa-solid fa-gauge-high"></i> Cloud Benchmarks
+                    </button>
+                    <button onclick="switchTab('saves')" id="nav-saves" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/40 font-medium text-sm transition-all border-l-2 border-transparent text-left">
+                        <i class="fa-solid fa-floppy-disk"></i> Saves & Shards
+                    </button>
+                    <button onclick="switchTab('apps')" id="nav-apps" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/40 font-medium text-sm transition-all border-l-2 border-transparent text-left">
+                        <i class="fa-solid fa-window-restore text-brand-cyan"></i> Application Registry
+                    </button>
+                </nav>
+            </div>
+
+            <div class="p-4 border-t border-slate-800/60">
+                <button onclick="openModal(currentActiveTab === 'overview' || currentActiveTab === 'apps' ? 'config' : currentActiveTab)" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-brand-purple to-brand-cyan hover:from-brand-purple/90 hover:to-brand-cyan/90 text-white font-semibold text-sm shadow-lg shadow-cyan-500/10 flex items-center justify-center gap-2 transition-all transform active:scale-95">
+                    <i class="fa-solid fa-plus-circle"></i> Add Data Entry
+                </button>
+            </div>
+        </aside>
+
+        <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm hidden lg:hidden"></div>
+
+        <div class="flex-1 flex flex-col h-full overflow-hidden">
+            
+            <header class="h-20 glass border-b border-slate-800/60 px-4 md:px-8 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-white rounded-lg glass">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-lg md:text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                            Cloud Dynamic Analytics Control
+                            <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-cyan-500/10 text-brand-cyan border border-brand-cyan/20">v2.5-Live</span>
+                        </h1>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4 md:gap-6">
+                    <div class="relative hidden sm:block w-48 md:w-64">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <i class="fa-solid fa-magnifying-glass text-slate-500 text-xs"></i>
+                        </span>
+                        <input type="text" id="dashboard-search" oninput="globalSearch()" class="w-full pl-9 pr-4 py-2 text-xs bg-slate-900/80 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-purple/60 focus:ring-1 focus:ring-brand-purple/60 transition-all" placeholder="Filter operational matrix...">
+                    </div>
+
+                    <div class="flex items-center gap-3 pl-4 border-l border-slate-800">
+                        <div class="text-right hidden md:block">
+                            <p class="text-xs font-semibold text-slate-200">Alex Mercer</p>
+                            <p class="text-[10px] text-brand-cyan tracking-wider uppercase font-medium">Cloud Gaming Data Analyst</p>
+                        </div>
+                        <div class="relative h-10 w-10 rounded-xl bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center text-brand-purple font-bold shadow-inner">
+                            <i class="fa-solid fa-user-astronaut text-lg"></i>
+                            <div class="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-slate-950"></div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-8">
+                
+                <section id="kpi-panel" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                    <div class="glass glass-neon-purple p-6 rounded-2xl relative overflow-hidden group">
+                        <div class="absolute -right-4 -bottom-4 text-purple-500/5 text-7xl font-bold"><i class="fa-solid fa-server"></i></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Active Shards</p>
+                                <h3 class="text-2xl font-bold text-white mt-2 tracking-tight" id="kpi-instances">--</h3>
+                            </div>
+                            <div class="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center relative">
+                                <span class="h-2 w-2 rounded-full bg-green-500 pulse-green"></span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-emerald-400 mt-4 flex items-center gap-1">
+                            <i class="fa-solid fa-caret-up"></i> +4.2% <span class="text-slate-500">vs last hour</span>
+                        </p>
+                    </div>
+
+                    <div class="glass glass-neon-cyan p-6 rounded-2xl relative overflow-hidden group">
+                        <div class="absolute -right-4 -bottom-4 text-cyan-500/5 text-7xl font-bold"><i class="fa-solid fa-bolt"></i></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Average Latency</p>
+                                <h3 class="text-2xl font-bold text-brand-cyan mt-2 tracking-tight">18 <span class="text-xs font-normal text-slate-400">ms</span></h3>
+                            </div>
+                            <div class="h-8 w-8 rounded-lg bg-cyan-500/10 text-brand-cyan flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-gauge"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-cyan-400 mt-4 flex items-center gap-1">
+                            <i class="fa-solid fa-caret-down"></i> -1.2ms <span class="text-slate-500">optimized routing</span>
+                        </p>
+                    </div>
+
+                    <div class="glass p-6 rounded-2xl relative overflow-hidden group hover:border-slate-700/80 transition-all">
+                        <div class="absolute -right-4 -bottom-4 text-slate-500/5 text-7xl font-bold"><i class="fa-solid fa-gamepad"></i></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Tracked Titles</p>
+                                <h3 class="text-2xl font-bold text-white mt-2 tracking-tight" id="kpi-titles">--</h3>
+                            </div>
+                            <div class="h-8 w-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-gamepad"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-4">Active dynamic registry</p>
+                    </div>
+
+                    <div class="glass p-6 rounded-2xl relative overflow-hidden group hover:border-slate-700/80 transition-all">
+                        <div class="absolute -right-4 -bottom-4 text-slate-500/5 text-7xl font-bold"><i class="fa-solid fa-network-wired"></i></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-semibold tracking-wider text-slate-400 uppercase">Sys Throughput</p>
+                                <h3 class="text-2xl font-bold text-white mt-2 tracking-tight">84.7 <span class="text-xs font-normal text-slate-400">Gb/s</span></h3>
+                            </div>
+                            <div class="h-8 w-8 rounded-lg bg-slate-800 text-slate-400 flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-amber-500 mt-4 flex items-center gap-1">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Peak storage threshold <span class="text-slate-500">82%</span>
+                        </p>
+                    </div>
+                </section>
+
+                <div id="tab-content-area">
+                    
+                    <div id="view-overview" class="space-y-6 tab-view">
+                        <div class="p-6 glass rounded-2xl border border-dashed border-slate-800 text-center py-12">
+                            <div class="h-12 w-12 rounded-full bg-brand-purple/10 text-brand-purple flex items-center justify-center mx-auto text-xl mb-4">
+                                <i class="fa-solid fa-network-wired"></i>
+                            </div>
+                            <h3 class="text-md font-bold text-white">Central Operations Management Shard</h3>
+                            <p class="text-xs text-slate-400 max-w-md mx-auto mt-2">Select a modular system profile repository on the left navigation menu to manage Game Configs, Real Save file maps, and System Applications without screen crowding.</p>
+                        </div>
+                    </div>
+
+                    <div id="view-config" class="hidden tab-view">
+                        <section class="glass rounded-2xl overflow-hidden shadow-xl border border-slate-800/80">
+                            <div class="p-6 bg-slate-900/40 border-b border-slate-800 flex items-center justify-between">
+                                <div>
+                                    <h2 class="text-md font-bold text-white flex items-center gap-2">
+                                        <span class="h-2 w-2 rounded-full bg-brand-purple"></span> XMind Shard: Game Configurations Matrix
+                                    </h2>
+                                    <p class="text-xs text-slate-400 mt-0.5">Deployment entries pulled dynamically from your mapped organizational schemas.</p>
+                                </div>
+                                <button onclick="openModal('config')" class="px-4 py-2 rounded-xl bg-brand-purple/20 hover:bg-brand-purple/30 text-brand-purple border border-brand-purple/30 text-xs font-semibold flex items-center gap-2 transition-all">
+                                    <i class="fa-solid fa-plus"></i> Add Config
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto w-full">
+                                <table class="w-full text-left border-collapse" id="table-config">
+                                    <thead>
+                                        <tr class="border-b border-slate-800/60 bg-slate-950/40 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                            <th class="py-4 px-6">Game Title</th>
+                                            <th class="py-4 px-6">Genre Hierarchy</th>
+                                            <th class="py-4 px-6">Max Multiplayers</th>
+                                            <th class="py-4 px-6">Server Region Shard</th>
+                                            <th class="py-4 px-6">Status</th>
+                                            <th class="py-4 px-6 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800/40 text-xs text-slate-300"></tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div id="view-benchmark" class="hidden tab-view">
+                        <section class="glass rounded-2xl overflow-hidden shadow-xl border border-slate-800/80">
+                            <div class="p-6 bg-slate-900/40 border-b border-slate-800 flex items-center justify-between">
+                                <div>
+                                    <h2 class="text-md font-bold text-white flex items-center gap-2">
+                                        <span class="h-2 w-2 rounded-full bg-brand-cyan"></span> Live Performance Benchmarks
+                                    </h2>
+                                    <p class="text-xs text-slate-400 mt-0.5">Telemetry matrix monitoring streaming frames and computational load thresholds.</p>
+                                </div>
+                                <button onclick="openModal('benchmark')" class="px-4 py-2 rounded-xl bg-brand-cyan/20 hover:bg-brand-cyan/30 text-brand-cyan border border-brand-cyan/30 text-xs font-semibold flex items-center gap-2 transition-all">
+                                    <i class="fa-solid fa-plus"></i> Add Benchmark
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto w-full">
+                                <table class="w-full text-left border-collapse" id="table-benchmark">
+                                    <thead>
+                                        <tr class="border-b border-slate-800/60 bg-slate-950/40 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                            <th class="py-4 px-6">Game Title</th>
+                                            <th class="py-4 px-6">Avg FPS</th>
+                                            <th class="py-4 px-6">Packet Loss %</th>
+                                            <th class="py-4 px-6">Server Load %</th>
+                                            <th class="py-4 px-6">Timestamp</th>
+                                            <th class="py-4 px-6 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800/40 text-xs text-slate-300"></tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div id="view-saves" class="hidden tab-view">
+                        <section class="glass rounded-2xl overflow-hidden shadow-xl border border-slate-800/80">
+                            <div class="p-6 bg-slate-900/40 border-b border-slate-800 flex items-center justify-between">
+                                <div>
+                                    <h2 class="text-md font-bold text-white flex items-center gap-2">
+                                        <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Consolidated Saves Shard Registry (From Archives)
+                                    </h2>
+                                    <p class="text-xs text-slate-400 mt-0.5">Active data map parsed directly from volume streams: 22Games, 2Saves, and 222Saves.</p>
+                                </div>
+                                <button onclick="openModal('save')" class="px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold flex items-center gap-2 transition-all">
+                                    <i class="fa-solid fa-plus"></i> Add Save Slot
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto w-full">
+                                <table class="w-full text-left border-collapse" id="table-saves">
+                                    <thead>
+                                        <tr class="border-b border-slate-800/60 bg-slate-950/40 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                            <th class="py-4 px-6">User Shard Identifier</th>
+                                            <th class="py-4 px-6">Target Game Reference</th>
+                                            <th class="py-4 px-6">Target File Path / Save Shard</th>
+                                            <th class="py-4 px-6">File Shard Size</th>
+                                            <th class="py-4 px-6">Last Cloud Sync Allocation</th>
+                                            <th class="py-4 px-6 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800/40 text-xs text-slate-300"></tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+
+                    <div id="view-apps" class="hidden tab-view">
+                        <section class="glass rounded-2xl overflow-hidden shadow-xl border border-slate-800/80">
+                            <div class="p-6 bg-slate-900/40 border-b border-slate-800 flex items-center justify-between">
+                                <div>
+                                    <h2 class="text-md font-bold text-white flex items-center gap-2">
+                                        <span class="h-2 w-2 rounded-full bg-cyan-400"></span> Image Mapping: Orchestrated Systems & Launchers
+                                    </h2>
+                                    <p class="text-xs text-slate-400 mt-0.5">Platform software tracking environment runtimes across your deployment nodes.</p>
+                                </div>
+                                <button onclick="openModal('app')" class="px-4 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 text-xs font-semibold flex items-center gap-2 transition-all">
+                                    <i class="fa-solid fa-plus"></i> Add Platform App
+                                </button>
+                            </div>
+                            <div class="overflow-x-auto w-full">
+                                <table class="w-full text-left border-collapse" id="table-apps">
+                                    <thead>
+                                        <tr class="border-b border-slate-800/60 bg-slate-950/40 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                                            <th class="py-4 px-6">Application Name</th>
+                                            <th class="py-4 px-6">Functional Deployment Category</th>
+                                            <th class="py-4 px-6">Target Process Handle</th>
+                                            <th class="py-4 px-6">Operational Integrity State</th>
+                                            <th class="py-4 px-6 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800/40 text-xs text-slate-300"></tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="crud-modal" class="fixed inset-0 z-50 overflow-y-auto hidden bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-700/80 transition-all transform scale-95 opacity-0 duration-300" id="modal-container">
+            
+            <div class="px-6 py-4 bg-slate-900/80 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-white" id="modal-title">Create Data Cluster Node</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="crud-form" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+                <input type="hidden" id="form-action-type" value="add">
+                <input type="hidden" id="form-target-id" value="">
+
+                <div id="category-select-wrapper">
+                    <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Category Registry Target</label>
+                    <select id="form-category" onchange="toggleFormFields(this.value)" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-purple/60 transition-all">
+                        <option value="config">Game Configuration (XMind Mapping)</option>
+                        <option value="benchmark">Performance Benchmark</option>
+                        <option value="save">Game Saves Metadata (Archive Track)</option>
+                        <option value="app">Application Launcher Registry</option>
+                    </select>
+                </div>
+
+                <div id="fields-config" class="space-y-4">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Game Title</label>
+                        <input type="text" id="config-title" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-purple/60 transition-all" placeholder="e.g., Stellaris">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Genre Hierarchy</label>
+                            <input type="text" id="config-genre" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-purple/60 transition-all" placeholder="e.g., Strategy / 4X game">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Max Players</label>
+                            <input type="number" id="config-players" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-purple/60 transition-all" placeholder="e.g., 32">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Server Region</label>
+                            <input type="text" id="config-region" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-purple/60 transition-all" placeholder="e.g., us-east">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Node Status</label>
+                            <select id="config-status" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-purple/60 transition-all">
+                                <option value="Active">Active</option>
+                                <option value="Maintenance">Maintenance</option>
+                                <option value="Offline">Offline</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="fields-benchmark" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Game Title Reference</label>
+                        <input type="text" id="bench-title" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-cyan/60 transition-all">
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Avg FPS</label>
+                            <input type="number" id="bench-fps" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-cyan/60 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Packet Loss %</label>
+                            <input type="text" id="bench-loss" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-cyan/60 transition-all" placeholder="0.00%">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Server Load</label>
+                            <input type="text" id="bench-load" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-brand-cyan/60 transition-all" placeholder="45%">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="fields-save" class="space-y-4 hidden">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">User Shard Identifier</label>
+                            <input type="text" id="save-uid" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/60 transition-all" placeholder="76561197960271872">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Game Reference</label>
+                            <input type="text" id="save-title" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/60 transition-all">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">File Path / Save Shard</label>
+                            <input type="text" id="save-slot" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/60 transition-all" placeholder="players2/savegame.svg">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">File Shard Size</label>
+                            <input type="text" id="save-size" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500/60 transition-all" placeholder="18.4 MB">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="fields-app" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Application/Launcher Name</label>
+                        <input type="text" id="app-name" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400/60 transition-all" placeholder="e.g., Epic Games Launcher">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Functional Deployment Category</label>
+                            <input type="text" id="app-category" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400/60 transition-all" placeholder="e.g., Distribution Subsystem">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Target Process Handle</label>
+                            <input type="text" id="app-handle" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400/60 transition-all" placeholder="epicgames.exe">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Operational Integrity State</label>
+                        <select id="app-status" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400/60 transition-all">
+                            <option value="Online / Verified">Online / Verified</option>
+                            <option value="Stale Session">Stale Session</option>
+                            <option value="Offline / Locked">Offline / Locked</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-800 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold tracking-wide transition-all">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-purple to-brand-cyan hover:opacity-90 text-white text-xs font-semibold tracking-wide transition-all shadow-md shadow-purple-500/10">Commit Shard Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // CORE CENTRAL DATA SHARD STORAGE STRUCTURE
+        let store = {
+            // Extracted & contextualized directly from uploaded: Games genre.xmind
+            config: [
+                { id: "cfg_1", title: "Hearts of Iron IV", genre: "Strategy / 4X game", maxPlayers: 32, region: "eu-west", status: "Active" },
+                { id: "cfg_2", title: "Stellaris", genre: "Strategy / 4X game", maxPlayers: 16, region: "us-east", status: "Active" },
+                { id: "cfg_3", title: "Company of Heroes 2", genre: "Strategy / RTS", maxPlayers: 8, region: "ap-southeast", status: "Maintenance" },
+                { id: "cfg_4", title: "Men of War: Assault Squad 2", genre: "Strategy / RTS", maxPlayers: 16, region: "eu-west", status: "Active" },
+                { id: "cfg_5", title: "Total War: SHOGUN 2", genre: "Strategy / Turn-based", maxPlayers: 4, region: "us-east", status: "Active" },
+                { id: "cfg_6", title: "Call of Duty: Black Ops", genre: "Action / Shooter", maxPlayers: 18, region: "us-east", status: "Active" },
+                { id: "cfg_7", title: "Dark Souls III", genre: "Action / Action RPG", maxPlayers: 4, region: "ap-southeast", status: "Active" },
+                { id: "cfg_8", title: "Dying Light", genre: "Action / Survival", maxPlayers: 4, region: "eu-west", status: "Offline" }
+            ],
+            benchmark: [
+                { id: "bnch_1", title: "Hearts of Iron IV", fps: 60, loss: "0.00%", load: "34%", time: "Just Now" },
+                { id: "bnch_2", title: "Call of Duty: Black Ops", fps: 120, loss: "0.02%", load: "71%", time: "3 mins ago" },
+                { id: "bnch_3", title: "Dark Souls III", fps: 60, loss: "0.00%", load: "55%", time: "12 mins ago" },
+                { id: "bnch_4", title: "Stellaris", fps: 58, loss: "0.05%", load: "82%", time: "1 hr ago" }
+            ],
+            // Raw metadata mapped straight from uploaded volumes: 22Games Saves.rar, 2Saves.rar, and 222Saves.rar
+            save: [
+                { id: "save_1", userId: "76561197960271872", title: "Universe Sandbox", slot: "UniverseProgressSave.far", size: "4.12 MB", sync: "Just Now" },
+                { id: "save_2", userId: "LocalSession", title: "Call of Duty: Black Ops 1", slot: "save/so_narrative1_frontend.svg", size: "214 KB", sync: "14s ago" },
+                { id: "save_3", userId: "76561198891740911", title: "Spider-Man Miles Morales", slot: "76561198891740911/slot0-s-manual-94.save", size: "1.45 MB", sync: "2 mins ago" },
+                { id: "save_4", userId: "Cloud_Profile1", title: "Hades 1", slot: "Documents/Saved Games/Profile1.sjson", size: "64 KB", sync: "5m ago" },
+                { id: "save_5", userId: "Sharded_usr_394360", title: "Hearts of Iron IV", slot: "remote/save games/arg_1939_08_14.hoi4", size: "21.2 MB", sync: "12m ago" },
+                { id: "save_6", userId: "LocalSession", title: "Ghost of Tsushima", slot: "Saved Games/Ghost of Tsushima/manual_002.sav", size: "3.41 MB", sync: "1 hr ago" },
+                { id: "save_7", userId: "usr_4294967295", title: "Dying Light 2", slot: "remote/out/save/save_main_1.sav", size: "8.9 MB", sync: "4 hrs ago" }
+            ],
+            // Core ecosystem apps identified across your multi-app control landscape
+            app: [
+                { id: "app_1", name: "Steam Core Engine", category: "Primary Distribution Subsystem", handle: "steam.exe", status: "Online / Verified" },
+                { id: "app_2", name: "EA App Core", category: "Publisher Distribution Link", handle: "EADesktop.exe", status: "Online / Verified" },
+                { id: "app_3", name: "Ubisoft Connect", category: "Publisher Distribution Link", handle: "upc.exe", status: "Online / Verified" },
+                { id: "app_4", name: "Epic Games Launcher", category: "Alternative Storefront Subsystem", handle: "EpicGamesLauncher.exe", status: "Online / Verified" },
+                { id: "app_5", name: "GOG Galaxy Shard", category: "Unified Cloud Manager", handle: "GalaxyClient.exe", status: "Stale Session" },
+                { id: "app_6", name: "Rockstar Games Launcher", category: "Secure DRM Validator", handle: "Launcher.exe", status: "Online / Verified" },
+                { id: "app_7", name: "Discord Overlay Node", category: "Telemetry Communications Core", handle: "Discord.exe", status: "Online / Verified" },
+                { id: "app_8", name: "OBS Studio Cluster", category: "Telemetry & Capture Pipeline", handle: "obs64.exe", status: "Offline / Locked" }
+            ]
+        };
+
+        let currentActiveTab = 'overview';
+        const modal = document.getElementById('crud-modal');
+        const modalContainer = document.getElementById('modal-container');
+        const formCategory = document.getElementById('form-category');
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderAllTables();
+            updateKPIs();
+        });
+
+        // Tab Switching Logic to prevent UI crowding
+        function switchTab(tabId) {
+            currentActiveTab = tabId;
+            
+            // Toggle view visibility
+            document.querySelectorAll('.tab-view').forEach(view => view.classList.add('hidden'));
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+            // Toggle KPI view behavior
+            const kpiPanel = document.getElementById('kpi-panel');
+            if(tabId === 'overview') {
+                kpiPanel.classList.remove('hidden');
+            } else {
+                kpiPanel.classList.remove('hidden'); // Keep statistics visible across contextual workspaces
+            }
+
+            // Update Navigation Menu Visual States
+            document.querySelectorAll('#sidebar-nav button').forEach(btn => {
+                btn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/40 font-medium text-sm transition-all border-l-2 border-transparent text-left";
+            });
+
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if(activeBtn) {
+                activeBtn.className = "w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-brand-purple/20 to-transparent border-l-2 border-brand-purple text-white font-medium text-sm transition-all text-left";
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function updateKPIs() {
+            document.getElementById('kpi-titles').innerText = store.config.length;
+            document.getElementById('kpi-instances').innerText = (store.config.length * 12 + store.app.length);
+        }
+
+        function toggleFormFields(category) {
+            document.getElementById('fields-config').classList.add('hidden');
+            document.getElementById('fields-benchmark').classList.add('hidden');
+            document.getElementById('fields-save').classList.add('hidden');
+            document.getElementById('fields-app').classList.add('hidden');
+
+            if(category === 'config') document.getElementById('fields-config').classList.remove('hidden');
+            if(category === 'benchmark') document.getElementById('fields-benchmark').classList.remove('hidden');
+            if(category === 'save') document.getElementById('fields-save').classList.remove('hidden');
+            if(category === 'app') document.getElementById('fields-app').classList.remove('hidden');
+        }
+
+        function openModal(preselectedCategory = 'config', mode = 'add', targetId = '') {
+            document.getElementById('form-action-type').value = mode;
+            document.getElementById('form-target-id').value = targetId;
+            formCategory.value = preselectedCategory;
+            toggleFormFields(preselectedCategory);
+
+            if (mode === 'edit') {
+                document.getElementById('modal-title').innerText = "Modify Shard Node Configuration";
+                document.getElementById('category-select-wrapper').classList.add('hidden');
+                populateFormForEdit(preselectedCategory, targetId);
+            } else {
+                document.getElementById('modal-title').innerText = "Create Shard Registry Node";
+                document.getElementById('category-select-wrapper').classList.remove('hidden');
+                document.getElementById('crud-form').reset();
+                formCategory.value = preselectedCategory;
+                toggleFormFields(preselectedCategory);
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContainer.classList.remove('scale-95', 'opacity-0');
+                modalContainer.classList.add('scale-100', 'opacity-100');
+            }, 50);
+        }
+
+        function closeModal() {
+            modalContainer.classList.remove('scale-100', 'opacity-100');
+            modalContainer.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        function renderAllTables() {
+            renderConfigTable();
+            renderBenchmarkTable();
+            renderSaveTable();
+            renderAppTable();
+        }
+
+        function renderConfigTable(data = store.config) {
+            const tbody = document.querySelector('#table-config tbody');
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-slate-900/30 transition-colors group">
+                    <td class="py-3.5 px-6 font-semibold text-white">${escapeHtml(item.title)}</td>
+                    <td class="py-3.5 px-6 text-slate-400">${escapeHtml(item.genre)}</td>
+                    <td class="py-3.5 px-6 text-slate-400"><i class="fa-solid fa-users text-[10px] mr-1.5 text-slate-500"></i>${item.maxPlayers}</td>
+                    <td class="py-3.5 px-6 text-xs uppercase tracking-wide text-brand-cyan">${escapeHtml(item.region)}</td>
+                    <td class="py-3.5 px-6">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.status === 'Active' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : item.status === 'Maintenance' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
+                            ${item.status}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-6 text-right space-x-2">
+                        <button onclick="openModal('config', 'edit', '${item.id}')" class="text-slate-400 hover:text-brand-purple transition-colors p-1"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteItem('config', '${item.id}')" class="text-slate-400 hover:text-rose-400 transition-colors p-1"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderBenchmarkTable(data = store.benchmark) {
+            const tbody = document.querySelector('#table-benchmark tbody');
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-slate-900/30 transition-colors group">
+                    <td class="py-3.5 px-6 font-semibold text-white">${escapeHtml(item.title)}</td>
+                    <td class="py-3.5 px-6 font-mono font-medium ${item.fps >= 60 ? 'text-emerald-400': 'text-amber-400'}">${item.fps} FPS</td>
+                    <td class="py-3.5 px-6 text-slate-400 font-mono">${escapeHtml(item.loss)}</td>
+                    <td class="py-3.5 px-6">
+                        <div class="flex items-center gap-2">
+                            <span class="text-slate-300 w-8 text-right font-mono">${escapeHtml(item.load)}</span>
+                            <div class="w-16 bg-slate-800 rounded-full h-1 overflow-hidden hidden sm:block">
+                                <div class="bg-brand-cyan h-1 rounded-full" style="width: ${item.load}"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-6 text-slate-500 text-[11px]"><i class="fa-regular fa-clock mr-1"></i>${escapeHtml(item.time)}</td>
+                    <td class="py-3.5 px-6 text-right space-x-2">
+                        <button onclick="openModal('benchmark', 'edit', '${item.id}')" class="text-slate-400 hover:text-brand-cyan transition-colors p-1"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteItem('benchmark', '${item.id}')" class="text-slate-400 hover:text-rose-400 transition-colors p-1"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderSaveTable(data = store.save) {
+            const tbody = document.querySelector('#table-saves tbody');
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-slate-900/30 transition-colors group">
+                    <td class="py-3.5 px-6 font-mono text-brand-purple font-medium">${escapeHtml(item.userId)}</td>
+                    <td class="py-3.5 px-6 font-medium text-white">${escapeHtml(item.title)}</td>
+                    <td class="py-3.5 px-6 text-slate-400"><span class="px-2 py-0.5 rounded bg-slate-800/80 border border-slate-700 font-mono text-[11px]">${escapeHtml(item.slot)}</span></td>
+                    <td class="py-3.5 px-6 text-slate-400 font-mono">${escapeHtml(item.size)}</td>
+                    <td class="py-3.5 px-6 text-emerald-400 text-[11px]"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>${escapeHtml(item.sync)}</td>
+                    <td class="py-3.5 px-6 text-right space-x-2">
+                        <button onclick="openModal('save', 'edit', '${item.id}')" class="text-slate-400 hover:text-emerald-400 transition-colors p-1"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteItem('save', '${item.id}')" class="text-slate-400 hover:text-rose-400 transition-colors p-1"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderAppTable(data = store.app) {
+            const tbody = document.querySelector('#table-apps tbody');
+            tbody.innerHTML = data.map(item => `
+                <tr class="hover:bg-slate-900/30 transition-colors group">
+                    <td class="py-3.5 px-6 font-semibold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-window-maximize text-slate-500 text-xs"></i> ${escapeHtml(item.name)}
+                    </td>
+                    <td class="py-3.5 px-6 text-slate-400">${escapeHtml(item.category)}</td>
+                    <td class="py-3.5 px-6 font-mono text-xs text-brand-cyan">${escapeHtml(item.handle)}</td>
+                    <td class="py-3.5 px-6">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.status.includes('Verified') ? 'bg-cyan-500/10 text-brand-cyan border border-brand-cyan/20' : item.status.includes('Stale') ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
+                            ${item.status}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-6 text-right space-x-2">
+                        <button onclick="openModal('app', 'edit', '${item.id}')" class="text-slate-400 hover:text-brand-cyan transition-colors p-1"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteItem('app', '${item.id}')" class="text-slate-400 hover:text-rose-400 transition-colors p-1"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function populateFormForEdit(category, id) {
+            const item = store[category].find(x => x.id === id);
+            if (!item) return;
+
+            if (category === 'config') {
+                document.getElementById('config-title').value = item.title;
+                document.getElementById('config-genre').value = item.genre;
+                document.getElementById('config-players').value = item.maxPlayers;
+                document.getElementById('config-region').value = item.region;
+                document.getElementById('config-status').value = item.status;
+            } else if (category === 'benchmark') {
+                document.getElementById('bench-title').value = item.title;
+                document.getElementById('bench-fps').value = item.fps;
+                document.getElementById('bench-loss').value = item.loss;
+                document.getElementById('bench-load').value = item.load;
+            } else if (category === 'save') {
+                document.getElementById('save-uid').value = item.userId;
+                document.getElementById('save-title').value = item.title;
+                document.getElementById('save-slot').value = item.slot;
+                document.getElementById('save-size').value = item.size;
+            } else if (category === 'app') {
+                document.getElementById('app-name').value = item.name;
+                document.getElementById('app-category').value = item.category;
+                document.getElementById('app-handle').value = item.handle;
+                document.getElementById('app-status').value = item.status;
+            }
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const mode = document.getElementById('form-action-type').value;
+            const category = formCategory.value;
+            const targetId = document.getElementById('form-target-id').value;
+
+            if (mode === 'add') {
+                const uniqueId = category + '_' + Date.now();
+                if (category === 'config') {
+                    store.config.push({
+                        id: uniqueId,
+                        title: document.getElementById('config-title').value || 'New Mapped Deployment',
+                        genre: document.getElementById('config-genre').value || 'Unassigned Hierarchy',
+                        maxPlayers: parseInt(document.getElementById('config-players').value) || 1,
+                        region: document.getElementById('config-region').value || 'us-east',
+                        status: document.getElementById('config-status').value
+                    });
+                } else if (category === 'benchmark') {
+                    store.benchmark.push({
+                        id: uniqueId,
+                        title: document.getElementById('bench-title').value || 'Telemetry Aggregator',
+                        fps: parseInt(document.getElementById('bench-fps').value) || 60,
+                        loss: document.getElementById('bench-loss').value || '0.00%',
+                        load: document.getElementById('bench-load').value || '10%',
+                        time: 'Just Now'
+                    });
+                } else if (category === 'save') {
+                    store.save.push({
+                        id: uniqueId,
+                        userId: document.getElementById('save-uid').value || 'LocalSession',
+                        title: document.getElementById('save-title').value || 'New Game Context',
+                        slot: document.getElementById('save-slot').value || 'save/snapshot_shard.sav',
+                        size: document.getElementById('save-size').value || '2.0 MB',
+                        sync: 'Just Now'
+                    });
+                } else if (category === 'app') {
+                    store.app.push({
+                        id: uniqueId,
+                        name: document.getElementById('app-name').value || 'New Subsystem Module',
+                        category: document.getElementById('app-category').value || 'Operational Subsystem',
+                        handle: document.getElementById('app-handle').value || 'process.exe',
+                        status: document.getElementById('app-status').value
+                    });
+                }
+            } else if (mode === 'edit') {
+                const index = store[category].findIndex(x => x.id === targetId);
+                if (index !== -1) {
+                    if (category === 'config') {
+                        store.config[index] = { ...store.config[index],
+                            title: document.getElementById('config-title').value,
+                            genre: document.getElementById('config-genre').value,
+                            maxPlayers: parseInt(document.getElementById('config-players').value),
+                            region: document.getElementById('config-region').value,
+                            status: document.getElementById('config-status').value
+                        };
+                    } else if (category === 'benchmark') {
+                        store.benchmark[index] = { ...store.benchmark[index],
+                            title: document.getElementById('bench-title').value,
+                            fps: parseInt(document.getElementById('bench-fps').value),
+                            loss: document.getElementById('bench-loss').value,
+                            load: document.getElementById('bench-load').value,
+                            time: 'Modified'
+                        };
+                    } else if (category === 'save') {
+                        store.save[index] = { ...store.save[index],
+                            userId: document.getElementById('save-uid').value,
+                            title: document.getElementById('save-title').value,
+                            slot: document.getElementById('save-slot').value,
+                            size: document.getElementById('save-size').value,
+                            sync: 'Synchronized'
+                        };
+                    } else if (category === 'app') {
+                        store.app[index] = { ...store.app[index],
+                            name: document.getElementById('app-name').value,
+                            category: document.getElementById('app-category').value,
+                            handle: document.getElementById('app-handle').value,
+                            status: document.getElementById('app-status').value
+                        };
+                    }
+                }
+            }
+
+            renderAllTables();
+            updateKPIs();
+            closeModal();
+            if(mode === 'add') switchTab(category);
+        }
+
+        function deleteItem(category, id) {
+            if(confirm('Terminate selected pipeline node matrix record?')) {
+                store[category] = store[category].filter(item => item.id !== id);
+                renderAllTables();
+                updateKPIs();
+            }
+        }
+
+        function globalSearch() {
+            const query = document.getElementById('dashboard-search').value.toLowerCase();
+            
+            const filteredConfig = store.config.filter(item => 
+                item.title.toLowerCase().includes(query) || item.genre.toLowerCase().includes(query) || item.region.toLowerCase().includes(query)
+            );
+            const filteredBenchmark = store.benchmark.filter(item => 
+                item.title.toLowerCase().includes(query) || item.load.toLowerCase().includes(query)
+            );
+            const filteredSave = store.save.filter(item => 
+                item.title.toLowerCase().includes(query) || item.userId.toLowerCase().includes(query) || item.slot.toLowerCase().includes(query)
+            );
+            const filteredApp = store.app.filter(item => 
+                item.name.toLowerCase().includes(query) || item.category.toLowerCase().includes(query) || item.handle.toLowerCase().includes(query)
+            );
+
+            renderConfigTable(filteredConfig);
+            renderBenchmarkTable(filteredBenchmark);
+            renderSaveTable(filteredSave);
+            renderAppTable(filteredApp);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+</html>
