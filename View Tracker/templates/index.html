@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game View Tracker Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f4f9; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        input[type="text"] { flex: 1; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 20px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; word-break: break-all; }
+        th { background-color: #f8f9fa; }
+        .status { margin-top: 10px; font-style: italic; color: #666; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Game View Tracker Dashboard</h2>
+    <div class="search-box">
+        <input type="text" id="queryInput" placeholder="Enter game title (e.g. Elden Ring)...">
+        <button onclick="performSearch()">Search</button>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Source</th>
+                <th>Search Query</th>
+                <th>Found Page URL</th>
+                <th>Views Count</th>
+            </tr>
+        </thead>
+        <tbody id="resultsTable">
+            <tr><td colspan="4">No search performed yet.</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+async function performSearch() {
+    const query = document.getElementById('queryInput').value.trim();
+    const tableBody = document.getElementById('resultsTable');
+    const statusDiv = document.getElementById('status');
+
+    if (!query) return;
+
+    statusDiv.textContent = 'Searching and fetching views across all matching pages...';
+    tableBody.innerHTML = '';
+
+    try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+
+        statusDiv.textContent = `Found ${data.length} page(s) for "${query}".`;
+
+        if (data.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4">No results found.</td></tr>';
+            return;
+        }
+
+        data.forEach(item => {
+            const row = document.createElement('tr');
+            
+            const urlCell = item.url 
+                ? `<a href="${item.url}" target="_blank">${item.url}</a>` 
+                : 'N/A';
+
+            row.innerHTML = `
+                <td><strong>${item.source}</strong></td>
+                <td>${item.title}</td>
+                <td>${urlCell}</td>
+                <td><strong>${typeof item.views === 'number' ? item.views.toLocaleString() : item.views}</strong></td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+    } catch (err) {
+        statusDiv.textContent = 'Error contacting server.';
+        console.error(err);
+    }
+}
+</script>
+
+</body>
+</html>
